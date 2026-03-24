@@ -1,0 +1,78 @@
+goal: 30개의 한국/해외 테크 뉴스 및 블로그 사이트에서 매일 크롤링하여 Discord 주간 리포트를 생성하는 시스템 구축
+
+constraints:
+  - Python 3.14+
+  - Discord webhook/bot API 연동
+  - "크롤링 주기: 매일 오전 10시, 오후 5시"
+  - "언어: 한국어 + 영어"
+  - 24시간 이내 최신 콘텐츠만 포함
+  - 카테고리별 분류 필수
+
+acceptance_criteria:
+  - 30개 사이트에서 성공적으로 크롤링
+  - 5개 카테고리로 분류
+  - Discord "시장 및 트렌드 조사" 채널에 주간 리포트 발송
+  - 취업 준비생 관점 인사이트 포함
+  - 카테고리별로 구분된 메시지 형식
+
+ontology_schema:
+  name: MarketTrendCrawler
+  description: 시장 및 트렌드 조사 크롤링 시스템 도메인 모델
+  fields:
+    - name: articles
+      type: array
+      description: 크롤링된 기사 리스트
+    - name: title
+      type: string
+      description: 기사 제목
+    - name: url
+      type: string
+      description: 기사 URL
+    - name: site
+      type: string
+      description: 출처 사이트
+    - name: category
+      type: string
+      description: 카테고리
+    - name: content
+      type: string
+      description: 기사 내용
+    - name: published_at
+      type: string
+      description: 발행일
+    - name: language
+      type: string
+      description: 언어
+    - name: insight
+      type: string
+      description: 취업 준비생 관점 인사이트
+
+evaluation_principles:
+  - name: coverage
+    description: 크롤링 커버리지 비율
+    weight: 0.3
+  - name: accuracy
+    description: 카테고리 분류 정확도
+    weight: 0.3
+  - name: relevance
+    description: 24시간 이내 최신성 준수
+    weight: 0.2
+  - name: quality
+    description: 인사이트 품질 및 관련성
+    weight: 0.2
+
+exit_conditions:
+  - name: 주간 리포트 성공적 발송
+    description: 모든 크롤링 완료 후 리포트 생성 및 전송
+    criteria: 리포트가 Discord에 성공적으로 전송됨
+  - name: 크롤링 완료
+    description: 모든 사이트 크롤링 완료
+    criteria: 30개 사이트 모두 크롤링 완료
+  - name: 주기 만료
+    description: 주간 주기 완료
+    criteria: 1주일 경과
+
+metadata:
+  ambiguity_score: 0.12
+  version: 0.1.0
+  created_at: 2026-03-24
