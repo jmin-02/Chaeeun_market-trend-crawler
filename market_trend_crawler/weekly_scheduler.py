@@ -71,17 +71,31 @@ def create_discord_client() -> DiscordClient:
     return DiscordClient(config)
 
 
-async def run_crawl_cycle(crawler: BaseCrawler, tasks: list[ScheduleTask]) -> list[Article]:
-    """Run a single crawl cycle across all tasks."""
+async def run_crawl_cycle(config: CrawlerConfig, tasks: list[ScheduleTask]) -> list[Article]:
+    """Run a single crawl cycle using site-specific crawlers."""
     all_articles: list[Article] = []
+    semaphore = asyncio.Semaphore(5)
 
-    scheduler = DailyScheduler(crawler=crawler)
-    scheduler.register_tasks(tasks)
+    async def crawl_site(task: ScheduleTask) -> tuple[str, list[Article]]:
+        async with semaphore:
+            CrawlerClass = ALL_CRAWLERS.get(task.name)
+            if not CrawlerClass:
+                logger.warning(f"No crawler found for {task.name}, using BaseCrawler")
+                CrawlerClass = BaseCrawler
 
-    results = await scheduler.run_once()
+            try:
+                async with CrawlerClass(config=config) as crawler:
+                    articles = await crawler.crawl(task.url, task.source, task.language)
+                    return task.name, articles
+            except Exception as e:
+                logger.error(f"  {task.name} failed: {e}")
+                return task.name, []
 
-    for task_name, articles in results.items():
-        logger.info(f"  {task_name}: {len(articles)} articles")
+    results = await asyncio.gather(*[crawl_site(t) for t in tasks])
+
+    for name, articles in results:
+        if articles:
+            logger.info(f"  {name}: {len(articles)} articles")
         all_articles.extend(articles)
 
     logger.info(f"Total articles crawled: {len(all_articles)}")
@@ -140,17 +154,16 @@ async def main():
         timeout=30,
     )
 
-    async with BaseCrawler(config=config) as crawler:
-        # Run crawl cycle
-        articles = await run_crawl_cycle(crawler, tasks)
+    # Run crawl cycle with site-specific crawlers
+    articles = await run_crawl_cycle(config, tasks)
 
-        # Create Discord client and send report
-        try:
-            discord = create_discord_client()
-            await generate_and_send_report(articles, discord)
-            discord.close()
-        except ValueError as e:
-            logger.error(f"Discord client configuration error: {e}")
-            logger.info("Skipping Discord report. Set DISCORD_BOT_TOKEN or DISCORD_WEBHOOK_URL in .env")
+    # Create Discord client and send report
+    try:
+        discord = create_discord_client()
+        await generate_and_send_report(articles, discord)
+        discord.close()
+    except ValueError as e:
+        logger.error(f"Discord client configuration error: {e}")
+        logger.info("Skipping Discord report. Set DISCORD_BOT_TOKEN or DISCORD_WEBHOOK_URL in .env")
 
     logger.info("=== Market Trend Crawler Complete ===")

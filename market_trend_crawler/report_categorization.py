@@ -102,11 +102,19 @@ def categorize_for_report(
     Returns:
         ReportAggregation object with categorized and aggregated data
     """
-    # Filter articles within the period
-    period_articles = [
-        a for a in articles
-        if period_start <= a.published_at <= period_end
-    ]
+    # Filter articles within the period (handle timezone-aware vs naive datetimes)
+    period_articles = []
+    for a in articles:
+        pub = a.published_at
+        # Strip timezone info for comparison if needed
+        if pub.tzinfo is not None:
+            pub = pub.replace(tzinfo=None)
+        try:
+            if period_start <= pub <= period_end:
+                period_articles.append(a)
+        except TypeError:
+            # Fallback: include all articles if comparison fails
+            period_articles.append(a)
 
     logger.info(
         f"Categorizing {len(period_articles)} articles "

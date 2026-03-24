@@ -22,6 +22,7 @@ from .discord_formatter import format_full_discord_report
 from .models import Article, SourceLanguage
 from .report_categorization import categorize_for_report
 from .scheduler import DailyScheduler, ScheduleTask
+from .sites import ALL_CRAWLERS
 from .sites.korean_sites_config import KOREAN_SITES_CONFIG
 from .sites.international_sites_config import INTERNATIONAL_SITES
 
@@ -107,13 +108,23 @@ class CrawlerBot(discord.Client):
 
         self._crawling = True
         try:
-            async with BaseCrawler(config=self.crawler_config) as crawler:
-                scheduler = DailyScheduler(crawler=crawler)
-                scheduler.register_tasks(self.crawl_tasks)
-                results = await scheduler.run_once()
+            semaphore = asyncio.Semaphore(5)
+
+            async def crawl_site(task):
+                async with semaphore:
+                    CrawlerClass = ALL_CRAWLERS.get(task.name, BaseCrawler)
+                    try:
+                        async with CrawlerClass(config=self.crawler_config) as crawler:
+                            articles = await crawler.crawl(task.url, task.source, task.language)
+                            return task.name, articles
+                    except Exception as e:
+                        logger.error(f"  {task.name} failed: {e}")
+                        return task.name, []
+
+            results = await asyncio.gather(*[crawl_site(t) for t in self.crawl_tasks])
 
             all_articles = []
-            for task_name, articles in results.items():
+            for task_name, articles in results:
                 all_articles.extend(articles)
                 if articles:
                     logger.info(f"  {task_name}: {len(articles)} articles")
