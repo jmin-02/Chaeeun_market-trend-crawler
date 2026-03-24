@@ -1,7 +1,7 @@
-"""Naver Tech (D2) crawler.
+"""Toss Tech (토스 기술 블로그) crawler.
 
-Naver Tech is Naver's developer and tech blog.
-Uses Atom feed for reliable extraction.
+Toss Tech is a Korean fintech company's engineering blog.
+Uses RSS feed to avoid SPA rendering issues.
 """
 
 import logging
@@ -16,16 +16,16 @@ from ..models import Article, SourceLanguage
 logger = logging.getLogger(__name__)
 
 
-class NaverTechCrawler(BaseCrawler):
-    """Crawler for Naver Tech (D2) - https://d2.naver.com"""
+class TossTechCrawler(BaseCrawler):
+    """Crawler for Toss Tech - https://toss.tech"""
 
-    BASE_URL = "https://d2.naver.com/d2.atom"
+    BASE_URL = "https://toss.tech/rss.xml"
 
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
-        """Extract articles from Naver D2 Atom feed.
+        """Extract articles from Toss Tech RSS feed.
 
         Args:
-            html: Atom XML content
+            html: RSS XML content
             source: Source name
             language: Content language
 
@@ -35,39 +35,32 @@ class NaverTechCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "xml")
         articles = []
 
-        entries = soup.find_all("entry")
-        logger.debug(f"Found {len(entries)} entries in Atom feed")
+        items = soup.find_all("item")
+        logger.debug(f"Found {len(items)} items in RSS feed")
 
-        for idx, entry in enumerate(entries):
+        for idx, item in enumerate(items):
             try:
-                title_tag = entry.find("title")
-                link_tag = entry.find("link")
-                summary_tag = entry.find("summary")
-                date_tag = entry.find("published")
-                author_tag = entry.find("author")
+                title_tag = item.find("title")
+                link_tag = item.find("link")
+                desc_tag = item.find("description")
+                date_tag = item.find("pubDate")
 
                 title = title_tag.get_text(strip=True) if title_tag else None
-                url = link_tag.get("href") if link_tag else None
+                url = link_tag.get_text(strip=True) if link_tag else None
 
                 if not title or not url:
                     continue
 
-                content = summary_tag.get_text(strip=True) if summary_tag else title
-
-                author = None
-                if author_tag:
-                    name_tag = author_tag.find("name")
-                    author = name_tag.get_text(strip=True) if name_tag else None
+                content = desc_tag.get_text(strip=True) if desc_tag else title
 
                 published_at = datetime.now()
                 if date_tag:
-                    date_str = date_tag.get_text(strip=True)
-                    for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"):
-                        try:
-                            published_at = datetime.strptime(date_str, fmt)
-                            break
-                        except ValueError:
-                            continue
+                    try:
+                        published_at = datetime.strptime(
+                            date_tag.get_text(strip=True), "%a, %d %b %Y %H:%M:%S %z"
+                        )
+                    except ValueError:
+                        pass
 
                 category = classify_article(url, title)
 
@@ -78,7 +71,6 @@ class NaverTechCrawler(BaseCrawler):
                     source=source,
                     published_at=published_at,
                     category=category,
-                    author=author,
                     language=SourceLanguage.KOREAN if language == "ko" else SourceLanguage.ENGLISH,
                 )
 

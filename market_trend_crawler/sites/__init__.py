@@ -22,6 +22,14 @@ from .danawa_tech import DanawaTechCrawler
 from .brunch_tech import BrunchTechCrawler
 from .tistory_tech import TistoryTechCrawler
 from .okky import OKKYCrawler
+from .toss_tech import TossTechCrawler
+from .woowahan import WoowahanCrawler
+from .daangn import DaangnCrawler
+from .hwahae import HwahaeCrawler
+from .gangnam_unni import GangnamUnniCrawler
+from .kakao_tech import KakaoTechCrawler
+from .ridi import RidiCrawler
+from .kurly import KurlyCrawler
 
 # International site crawlers
 from .techcrunch import TechCrunchCrawler
@@ -58,6 +66,14 @@ __all__ = [
     "BrunchTechCrawler",
     "TistoryTechCrawler",
     "OKKYCrawler",
+    "TossTechCrawler",
+    "WoowahanCrawler",
+    "DaangnCrawler",
+    "HwahaeCrawler",
+    "GangnamUnniCrawler",
+    "KakaoTechCrawler",
+    "RidiCrawler",
+    "KurlyCrawler",
     # International crawlers
     "TechCrunchCrawler",
     "TheVergeCrawler",
@@ -94,6 +110,14 @@ KOREAN_CRAWLERS = {
     "Brunch Tech": BrunchTechCrawler,
     "Tistory Tech": TistoryTechCrawler,
     "OKKY": OKKYCrawler,
+    "Toss Tech": TossTechCrawler,
+    "Woowahan": WoowahanCrawler,
+    "Daangn": DaangnCrawler,
+    "Hwahae": HwahaeCrawler,
+    "Gangnam Unni": GangnamUnniCrawler,
+    "Kakao Tech": KakaoTechCrawler,
+    "Ridi": RidiCrawler,
+    "Kurly": KurlyCrawler,
 }
 
 INTERNATIONAL_CRAWLERS = {

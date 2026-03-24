@@ -1,7 +1,6 @@
-"""Naver Tech (D2) crawler.
+"""Daangn (당근마켓) tech blog crawler.
 
-Naver Tech is Naver's developer and tech blog.
-Uses Atom feed for reliable extraction.
+Daangn's tech blog is hosted on Medium. Uses RSS feed to bypass Cloudflare.
 """
 
 import logging
@@ -16,16 +15,16 @@ from ..models import Article, SourceLanguage
 logger = logging.getLogger(__name__)
 
 
-class NaverTechCrawler(BaseCrawler):
-    """Crawler for Naver Tech (D2) - https://d2.naver.com"""
+class DaangnCrawler(BaseCrawler):
+    """Crawler for Daangn Tech Blog - https://medium.com/daangn"""
 
-    BASE_URL = "https://d2.naver.com/d2.atom"
+    BASE_URL = "https://medium.com/feed/daangn"
 
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
-        """Extract articles from Naver D2 Atom feed.
+        """Extract articles from Daangn Medium RSS feed.
 
         Args:
-            html: Atom XML content
+            html: RSS XML content
             source: Source name
             language: Content language
 
@@ -35,39 +34,34 @@ class NaverTechCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "xml")
         articles = []
 
-        entries = soup.find_all("entry")
-        logger.debug(f"Found {len(entries)} entries in Atom feed")
+        items = soup.find_all("item")
+        logger.debug(f"Found {len(items)} items in RSS feed")
 
-        for idx, entry in enumerate(entries):
+        for idx, item in enumerate(items):
             try:
-                title_tag = entry.find("title")
-                link_tag = entry.find("link")
-                summary_tag = entry.find("summary")
-                date_tag = entry.find("published")
-                author_tag = entry.find("author")
+                title_tag = item.find("title")
+                link_tag = item.find("link")
+                desc_tag = item.find("description")
+                date_tag = item.find("pubDate")
+                creator_tag = item.find("dc:creator") or item.find("creator")
 
                 title = title_tag.get_text(strip=True) if title_tag else None
-                url = link_tag.get("href") if link_tag else None
+                url = link_tag.get_text(strip=True) if link_tag else None
 
                 if not title or not url:
                     continue
 
-                content = summary_tag.get_text(strip=True) if summary_tag else title
-
-                author = None
-                if author_tag:
-                    name_tag = author_tag.find("name")
-                    author = name_tag.get_text(strip=True) if name_tag else None
+                content = desc_tag.get_text(strip=True) if desc_tag else title
+                author = creator_tag.get_text(strip=True) if creator_tag else None
 
                 published_at = datetime.now()
                 if date_tag:
-                    date_str = date_tag.get_text(strip=True)
-                    for fmt in ("%Y-%m-%dT%H:%M:%S%z", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d"):
-                        try:
-                            published_at = datetime.strptime(date_str, fmt)
-                            break
-                        except ValueError:
-                            continue
+                    try:
+                        published_at = datetime.strptime(
+                            date_tag.get_text(strip=True), "%a, %d %b %Y %H:%M:%S %z"
+                        )
+                    except ValueError:
+                        pass
 
                 category = classify_article(url, title)
 
