@@ -1,0 +1,9 @@
+services:
+  crawler:
+    build: .
+    container_name: market-trend-crawler
+    restart: unless-stopped
+    volumes:
+      - ./.env:/app/.env:ro
+    env_file:
+      - .env
