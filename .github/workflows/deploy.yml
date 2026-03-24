@@ -1,0 +1,22 @@
+name: Deploy to jaemin-server
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - name: Pull latest code
+        shell: cmd
+        run: |
+          git config --global --add safe.directory C:/Users/jaemin.chae/Chaeeun_market-trend-crawler
+          cd C:\Users\jaemin.chae\Chaeeun_market-trend-crawler
+          git pull origin main
+
+      - name: Rebuild and restart container
+        shell: cmd
+        run: |
+          cd C:\Users\jaemin.chae\Chaeeun_market-trend-crawler
+          docker compose up -d --build
