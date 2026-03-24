@@ -30,42 +30,43 @@ class ReadWriteCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # ReadWrite article structure
-        for item in soup.select("article") or soup.select(".post-item"):
-            try:
-                # Extract title
-                title_elem = item.find("h2") or item.select_one(".title") or item.find("h3")
-                if not title_elem:
-                    continue
-                title = title_elem.get_text(strip=True)
+        # ReadWrite uses h2/h3 links for article headlines
+        seen_urls = set()
 
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
-                    continue
+        for link_elem in soup.select("h2 a[href]") + soup.select("h3 a[href]"):
+            try:
                 url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
+                if not url:
+                    continue
+
+                # Resolve relative URLs
+                if not url.startswith("http"):
                     url = f"https://readwrite.com{url}"
 
-                # Extract content preview
-                content_elem = item.select_one(".excerpt") or item.select_one(".summary")
-                content = content_elem.get_text(strip=True) if content_elem else title
+                # Deduplicate
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
 
-                # Extract publication date
-                time_elem = item.find("time")
+                title = link_elem.get_text(strip=True)
+                if not title or len(title) < 5:
+                    continue
+
+                content = title
                 published_at = datetime.now()
-                if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
-                    try:
-                        published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass
 
-                # Extract author
-                author_elem = item.select_one(".author") or item.select_one(".byline")
-                author = author_elem.get_text(strip=True) if author_elem else None
+                # Try to find a time element nearby
+                parent = link_elem.find_parent("article") or link_elem.find_parent()
+                if parent:
+                    time_elem = parent.find("time")
+                    if time_elem:
+                        datetime_str = time_elem.get("datetime", "")
+                        if datetime_str:
+                            try:
+                                published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
+                            except (ValueError, AttributeError):
+                                pass
 
-                # Determine category from URL and title
                 category = self._determine_category(url, title)
 
                 article = Article(
@@ -74,7 +75,6 @@ class ReadWriteCrawler(BaseCrawler):
                     content=content[:500],
                     source=source,
                     published_at=published_at,
-                    author=author,
                     category=category,
                     language=SourceLanguage.ENGLISH,
                 )

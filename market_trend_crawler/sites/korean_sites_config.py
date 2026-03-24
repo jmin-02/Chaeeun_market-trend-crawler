@@ -23,7 +23,7 @@ class KoreanSiteConfig:
 KOREAN_SITES_CONFIG = [
     KoreanSiteConfig(
         name="Bloter",
-        url="https://www.bloter.net",
+        url="https://www.bloter.net/news/articleList.html",
         crawler_class="BloterCrawler",
         language=SourceLanguage.KOREAN,
         enabled=True,
@@ -36,7 +36,7 @@ KOREAN_SITES_CONFIG = [
     ),
     KoreanSiteConfig(
         name="TechM",
-        url="https://techm.kr",
+        url="https://www.techm.kr",
         crawler_class="TechMCrawler",
         language=SourceLanguage.KOREAN,
         enabled=True,
@@ -75,7 +75,7 @@ KOREAN_SITES_CONFIG = [
         url="https://www.ciokorea.com",
         crawler_class="CIOKoreaCrawler",
         language=SourceLanguage.KOREAN,
-        enabled=True,
+        enabled=False,
         category_mapping={
             "/ai": Category.AI_ML,
             "/cloud": Category.DEVOPS_CLOUD,
@@ -87,7 +87,7 @@ KOREAN_SITES_CONFIG = [
         url="https://www.b2news.co.kr",
         crawler_class="B2NewsCrawler",
         language=SourceLanguage.KOREAN,
-        enabled=True,
+        enabled=False,
         notes="Korean B2B tech news site",
     ),
     KoreanSiteConfig(
@@ -108,7 +108,7 @@ KOREAN_SITES_CONFIG = [
     ),
     KoreanSiteConfig(
         name="MK Tech",
-        url="https://www.mk.co.kr",
+        url="https://www.mk.co.kr/news/it/",
         crawler_class="MKTechCrawler",
         language=SourceLanguage.KOREAN,
         enabled=True,
@@ -132,7 +132,7 @@ KOREAN_SITES_CONFIG = [
     ),
     KoreanSiteConfig(
         name="The Elec",
-        url="https://www.thelec.co.kr",
+        url="https://www.thelec.kr",
         crawler_class="TheElecCrawler",
         language=SourceLanguage.KOREAN,
         enabled=True,
@@ -146,12 +146,12 @@ KOREAN_SITES_CONFIG = [
         url="https://d2.naver.com",
         crawler_class="NaverTechCrawler",
         language=SourceLanguage.KOREAN,
-        enabled=True,
+        enabled=False,
         notes="Naver's developer and tech blog",
     ),
     KoreanSiteConfig(
         name="Danawa Tech",
-        url="https://blog.danawa.com",
+        url="https://dpg.danawa.com/news/list",
         crawler_class="DanawaTechCrawler",
         language=SourceLanguage.KOREAN,
         enabled=True,
@@ -162,7 +162,7 @@ KOREAN_SITES_CONFIG = [
         url="https://brunch.co.kr",
         crawler_class="BrunchTechCrawler",
         language=SourceLanguage.KOREAN,
-        enabled=True,
+        enabled=False,
         notes="Tech-focused content from Brunch, a Korean blogging platform",
     ),
     KoreanSiteConfig(
@@ -170,7 +170,7 @@ KOREAN_SITES_CONFIG = [
         url="https://okky.kr",
         crawler_class="OKKYCrawler",
         language=SourceLanguage.KOREAN,
-        enabled=True,
+        enabled=False,
         notes="Korean developer community and tech blog platform",
     ),
 ]

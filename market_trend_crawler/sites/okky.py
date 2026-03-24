@@ -3,6 +3,7 @@
 OKKY is a Korean developer community and tech blog platform.
 """
 
+import logging
 from datetime import datetime
 from typing import Optional
 
@@ -11,6 +12,8 @@ from bs4 import BeautifulSoup
 from ..base import BaseCrawler
 from ..models import Article, Category, SourceLanguage
 from ..classification import classify_article
+
+logger = logging.getLogger(__name__)
 
 
 class OKKYCrawler(BaseCrawler):
@@ -27,66 +30,8 @@ class OKKYCrawler(BaseCrawler):
         Returns:
             List of extracted articles
         """
-        soup = BeautifulSoup(html, "html.parser")
-        articles = []
-
-        # OKKY article list items
-        for item in soup.select(".list-item") or soup.select(".article"):
-            try:
-                # Extract title
-                title_elem = item.find("h2") or item.find("h3") or item.select_one(".title") or item.select_one(".question-title")
-                if not title_elem:
-                    continue
-                title = title_elem.get_text(strip=True)
-
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
-                    continue
-                url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
-                    url = f"https://okky.kr{url}"
-
-                # Extract content preview
-                content_elem = item.select_one(".excerpt") or item.select_one(".summary") or item.select_one(".content")
-                content = content_elem.get_text(strip=True) if content_elem else title
-
-                # Extract publication date
-                time_elem = item.find("time") or item.select_one(".date") or item.select_one(".time")
-                published_at = datetime.now()
-                if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
-                    try:
-                        published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        try:
-                            published_at = datetime.strptime(datetime_str, "%Y-%m-%d")
-                        except ValueError:
-                            pass
-
-                # Extract author
-                author_elem = item.select_one(".author") or item.select_one(".writer") or item.select_one(".user-name")
-                author = author_elem.get_text(strip=True) if author_elem else None
-
-                # Determine category
-                category = self._determine_category(url, title)
-
-                article = Article(
-                    title=title,
-                    url=url,
-                    content=content[:500],
-                    source=source,
-                    published_at=published_at,
-                    author=author,
-                    category=category,
-                    language=SourceLanguage.KOREAN,
-                )
-                articles.append(article)
-
-            except Exception as e:
-                continue
-
-        return articles
+        logger.warning("OKKY requires JavaScript rendering, skipping")
+        return []
 
     def _determine_category(self, url: str, title: str) -> Category:
         """Determine category from URL and title using centralized classification.

@@ -43,8 +43,8 @@ class TechCrunchCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # TechCrunch uses a specific post structure
-        article_items = soup.select("article.post-block") or soup.select(".post-block")
+        # TechCrunch uses WordPress block layout
+        article_items = soup.select("li.wp-block-post")
 
         logger.debug(f"Found {len(article_items)} article items to process")
 
@@ -114,7 +114,11 @@ class TechCrunchCrawler(BaseCrawler):
     def _extract_title(self, item, source: str, index: int) -> Optional[str]:
         """Extract article title with error handling."""
         try:
-            title_elem = item.find("h2") or item.select_one(".post-block__title a")
+            title_elem = (
+                item.select_one("h2 a")
+                or item.select_one("h3 a")
+                or item.find("a")
+            )
             if not title_elem:
                 return None
 
@@ -162,7 +166,10 @@ class TechCrunchCrawler(BaseCrawler):
     def _extract_content(self, item, source: str, index: int, default_title: str) -> str:
         """Extract article content with error handling."""
         try:
-            content_elem = item.select_one(".post-block__excerpt")
+            content_elem = (
+                item.select_one(".loop-card__excerpt")
+                or item.find("p")
+            )
             content = content_elem.get_text(strip=True) if content_elem else default_title
 
             return content[:500]  # Limit content length
@@ -197,7 +204,7 @@ class TechCrunchCrawler(BaseCrawler):
     def _extract_author(self, item, source: str, index: int) -> Optional[str]:
         """Extract article author with error handling."""
         try:
-            author_elem = item.select_one(".post-block__author") or item.select_one(".author")
+            author_elem = item.select_one(".author") or item.select_one("[rel='author']")
             return author_elem.get_text(strip=True) if author_elem else None
 
         except Exception as e:

@@ -14,7 +14,7 @@ from ..classification import classify_article
 
 
 class TheElecCrawler(BaseCrawler):
-    """Crawler for The Elec (전자신문) - https://www.thelec.co.kr"""
+    """Crawler for The Elec (전자신문) - https://www.thelec.kr"""
 
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from The Elec.
@@ -31,7 +31,7 @@ class TheElecCrawler(BaseCrawler):
         articles = []
 
         # The Elec article list items
-        for item in soup.select(".news_list") or soup.select(".article-item"):
+        for item in soup.select("article"):
             try:
                 # Extract title
                 title_elem = item.find("h2") or item.find("h3") or item.select_one(".title")
@@ -45,7 +45,7 @@ class TheElecCrawler(BaseCrawler):
                     continue
                 url = link_elem.get("href", "")
                 if url and not url.startswith("http"):
-                    url = f"https://www.thelec.co.kr{url}"
+                    url = f"https://www.thelec.kr{url}"
 
                 # Extract content preview
                 content_elem = item.select_one(".summary") or item.select_one(".desc")

@@ -44,7 +44,7 @@ class BloterCrawler(BaseCrawler):
         articles = []
 
         # Bloter article list items
-        article_items = soup.select("article.post") or soup.select(".news_list li")
+        article_items = soup.select("#section-list ul.type1 li")
 
         logger.debug(f"Found {len(article_items)} article items to process")
 
@@ -123,7 +123,7 @@ class BloterCrawler(BaseCrawler):
             Title string or None if not found
         """
         try:
-            title_elem = item.find("h2") or item.find("h3") or item.select_one(".title")
+            title_elem = item.select_one("h2.titles a")
             if not title_elem:
                 return None
 
@@ -158,7 +158,7 @@ class BloterCrawler(BaseCrawler):
             Full URL string or None if not found
         """
         try:
-            link_elem = item.find("a")
+            link_elem = item.select_one("h2.titles a")
             if not link_elem:
                 return None
 
@@ -215,11 +215,11 @@ class BloterCrawler(BaseCrawler):
             Datetime object (defaults to now if parsing fails)
         """
         try:
-            time_elem = item.find("time") or item.select_one(".date")
+            time_elem = item.select_one("em.info.dated")
             if not time_elem:
                 return datetime.now()
 
-            datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
+            datetime_str = time_elem.get_text(strip=True)
             if not datetime_str:
                 return datetime.now()
 
@@ -254,7 +254,7 @@ class BloterCrawler(BaseCrawler):
             Author string or None if not found
         """
         try:
-            author_elem = item.select_one(".author") or item.select_one(".writer")
+            author_elem = item.select_one("em.info.name")
             return author_elem.get_text(strip=True) if author_elem else None
 
         except Exception as e:

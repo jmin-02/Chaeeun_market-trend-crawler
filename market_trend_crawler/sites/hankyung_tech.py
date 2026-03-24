@@ -16,6 +16,8 @@ from ..classification import classify_article
 class HankyungTechCrawler(BaseCrawler):
     """Crawler for Hankyung Tech (한국경제) - https://www.hankyung.com"""
 
+    BASE_URL = "https://www.hankyung.com"
+
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from Hankyung Tech.
 
@@ -31,16 +33,16 @@ class HankyungTechCrawler(BaseCrawler):
         articles = []
 
         # Hankyung Tech article list items
-        for item in soup.select(".news_list") or soup.select(".article-item"):
+        for item in soup.select("div.news-item"):
             try:
                 # Extract title
-                title_elem = item.find("h3") or item.find("h2") or item.select_one(".title")
+                title_elem = item.select_one("h2.news-tit a")
                 if not title_elem:
                     continue
                 title = title_elem.get_text(strip=True)
 
                 # Extract URL
-                link_elem = item.find("a")
+                link_elem = item.select_one("h2.news-tit a")
                 if not link_elem:
                     continue
                 url = link_elem.get("href", "")
@@ -48,17 +50,17 @@ class HankyungTechCrawler(BaseCrawler):
                     url = f"https://www.hankyung.com{url}"
 
                 # Extract content preview
-                content_elem = item.select_one(".summary") or item.select_one(".desc")
+                content_elem = item.select_one("p.news-subtit")
                 content = content_elem.get_text(strip=True) if content_elem else title
 
                 # Extract publication date
-                time_elem = item.find("time") or item.select_one(".date")
+                time_elem = item.select_one("p.txt-date")
                 published_at = datetime.now()
                 if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
+                    datetime_str = time_elem.get_text(strip=True)
                     try:
-                        published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
+                        published_at = datetime.strptime(datetime_str, "%Y.%m.%d %H:%M")
+                    except ValueError:
                         try:
                             published_at = datetime.strptime(datetime_str, "%Y.%m.%d")
                         except ValueError:

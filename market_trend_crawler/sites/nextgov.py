@@ -30,58 +30,95 @@ class NextgovCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # Nextgov article structure
-        for item in soup.select("article") or soup.select(".article-item"):
-            try:
-                # Extract title
-                title_elem = item.find("h2") or item.select_one(".title") or item.find("h3")
-                if not title_elem:
+        # Nextgov uses div.river-item-inner containers or h2 a links
+        seen_urls = set()
+
+        # Try river items first
+        river_items = soup.select("div.river-item-inner")
+        if river_items:
+            for item in river_items:
+                try:
+                    link_elem = item.select_one("h2 a")
+                    if not link_elem:
+                        continue
+
+                    url = link_elem.get("href", "")
+                    if not url:
+                        continue
+                    if not url.startswith("http"):
+                        url = f"https://www.nextgov.com{url}"
+
+                    if url in seen_urls:
+                        continue
+                    seen_urls.add(url)
+
+                    title = link_elem.get_text(strip=True)
+                    if not title or len(title) < 5:
+                        continue
+
+                    content = title
+                    published_at = datetime.now()
+
+                    time_elem = item.find("time")
+                    if time_elem:
+                        datetime_str = time_elem.get("datetime", "")
+                        if datetime_str:
+                            try:
+                                published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
+                            except (ValueError, AttributeError):
+                                pass
+
+                    category = self._determine_category(url, title)
+
+                    article = Article(
+                        title=title,
+                        url=url,
+                        content=content[:500],
+                        source=source,
+                        published_at=published_at,
+                        category=category,
+                        language=SourceLanguage.ENGLISH,
+                    )
+                    articles.append(article)
+
+                except Exception as e:
                     continue
-                title = title_elem.get_text(strip=True)
+        else:
+            # Fallback: find all h2 a links
+            for link_elem in soup.select("h2 a[href]"):
+                try:
+                    url = link_elem.get("href", "")
+                    if not url:
+                        continue
+                    if not url.startswith("http"):
+                        url = f"https://www.nextgov.com{url}"
 
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
+                    if url in seen_urls:
+                        continue
+                    seen_urls.add(url)
+
+                    title = link_elem.get_text(strip=True)
+                    if not title or len(title) < 5:
+                        continue
+
+                    content = title
+                    published_at = datetime.now()
+
+                    category = self._determine_category(url, title)
+
+                    article = Article(
+                        title=title,
+                        url=url,
+                        content=content[:500],
+                        source=source,
+                        published_at=published_at,
+                        category=category,
+                        language=SourceLanguage.ENGLISH,
+                    )
+                    articles.append(article)
+
+                except Exception as e:
                     continue
-                url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
-                    url = f"https://www.nextgov.com{url}"
-
-                # Extract content preview
-                content_elem = item.select_one(".excerpt") or item.select_one(".summary")
-                content = content_elem.get_text(strip=True) if content_elem else title
-
-                # Extract publication date
-                time_elem = item.find("time")
-                published_at = datetime.now()
-                if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
-                    try:
-                        published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass
-
-                # Extract author
-                author_elem = item.select_one(".author") or item.select_one(".byline")
-                author = author_elem.get_text(strip=True) if author_elem else None
-
-                # Determine category from URL and title
-                category = self._determine_category(url, title)
-
-                article = Article(
-                    title=title,
-                    url=url,
-                    content=content[:500],
-                    source=source,
-                    published_at=published_at,
-                    author=author,
-                    category=category,
-                    language=SourceLanguage.ENGLISH,
-                )
-                articles.append(article)
-
-            except Exception as e:
-                continue
 
         return articles
 

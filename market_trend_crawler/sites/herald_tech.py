@@ -16,6 +16,8 @@ from ..classification import classify_article
 class HeraldTechCrawler(BaseCrawler):
     """Crawler for Herald Tech (헤럴드경제) - https://biz.heraldcorp.com"""
 
+    BASE_URL = "https://biz.heraldcorp.com"
+
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from Herald Tech.
 
@@ -31,16 +33,16 @@ class HeraldTechCrawler(BaseCrawler):
         articles = []
 
         # Herald Tech article list items
-        for item in soup.select(".news_list") or soup.select(".article-item"):
+        for item in soup.select("article"):
             try:
                 # Extract title
-                title_elem = item.find("h3") or item.find("h2") or item.select_one(".title")
+                title_elem = item.select_one(".news_title")
                 if not title_elem:
                     continue
                 title = title_elem.get_text(strip=True)
 
                 # Extract URL
-                link_elem = item.find("a")
+                link_elem = item.select_one("a.txt_area")
                 if not link_elem:
                     continue
                 url = link_elem.get("href", "")
@@ -48,7 +50,7 @@ class HeraldTechCrawler(BaseCrawler):
                     url = f"https://biz.heraldcorp.com{url}"
 
                 # Extract content preview
-                content_elem = item.select_one(".summary") or item.select_one(".desc")
+                content_elem = item.select_one(".news_text")
                 content = content_elem.get_text(strip=True) if content_elem else title
 
                 # Extract publication date

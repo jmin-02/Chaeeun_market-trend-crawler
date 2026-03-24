@@ -30,42 +30,54 @@ class TheVergeCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # The Verge article structure
-        for item in soup.select("article.c-entry") or soup.select(".c-entry"):
-            try:
-                # Extract title
-                title_elem = item.find("h2") or item.select_one(".c-entry__title") or item.find("h3")
-                if not title_elem:
-                    continue
-                title = title_elem.get_text(strip=True)
+        # The Verge uses content-card elements and links with /news/ paths
+        # Strategy: find h2/h3 links pointing to news or date-based articles
+        seen_urls = set()
+        link_candidates = (
+            soup.select("h2 a[href]")
+            + soup.select("h3 a[href]")
+            + soup.select("a[href*='/news/']")
+        )
 
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
-                    continue
+        for link_elem in link_candidates:
+            try:
                 url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
+                if not url:
+                    continue
+
+                # Filter to news/date-based article URLs
+                if not ("/news/" in url or "/2024/" in url or "/2025/" in url or "/2026/" in url):
+                    continue
+
+                # Resolve relative URLs
+                if not url.startswith("http"):
                     url = f"https://www.theverge.com{url}"
 
-                # Extract content preview
-                content_elem = item.select_one(".c-entry__summary") or item.select_one(".c-entry__excerpt")
-                content = content_elem.get_text(strip=True) if content_elem else title
+                # Deduplicate
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
 
-                # Extract publication date
-                time_elem = item.find("time") or item.select_one(".c-byline__time")
+                # Extract title from link text
+                title = link_elem.get_text(strip=True)
+                if not title or len(title) < 5:
+                    continue
+
+                content = title
                 published_at = datetime.now()
-                if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
-                    try:
-                        published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass
 
-                # Extract author
-                author_elem = item.select_one(".c-byline__author") or item.select_one(".author")
-                author = author_elem.get_text(strip=True) if author_elem else None
+                # Try to find a time element nearby
+                parent = link_elem.find_parent()
+                if parent:
+                    time_elem = parent.find("time")
+                    if time_elem:
+                        datetime_str = time_elem.get("datetime", "")
+                        if datetime_str:
+                            try:
+                                published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
+                            except (ValueError, AttributeError):
+                                pass
 
-                # Determine category from URL and title
                 category = self._determine_category(url, title)
 
                 article = Article(
@@ -74,7 +86,6 @@ class TheVergeCrawler(BaseCrawler):
                     content=content[:500],
                     source=source,
                     published_at=published_at,
-                    author=author,
                     category=category,
                     language=SourceLanguage.ENGLISH,
                 )

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 class TechMCrawler(BaseCrawler):
     """Crawler for TechM (테크엠) - https://techm.kr"""
 
-    BASE_URL = "https://techm.kr"
+    BASE_URL = "https://www.techm.kr"
 
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from TechM with enhanced error handling.
@@ -43,7 +43,7 @@ class TechMCrawler(BaseCrawler):
         articles = []
 
         # TechM article list items
-        article_items = soup.select(".post-item") or soup.select("article")
+        article_items = soup.select("article")
 
         logger.debug(f"Found {len(article_items)} article items to process")
 
@@ -113,7 +113,10 @@ class TechMCrawler(BaseCrawler):
     def _extract_title(self, item, source: str, index: int) -> Optional[str]:
         """Extract article title with error handling."""
         try:
-            title_elem = item.find("h2") or item.find("h3") or item.select_one(".title")
+            title_elem = item.find("h2") or item.find("h3")
+            if not title_elem:
+                # Fallback: first <a> inside article
+                title_elem = item.find("a")
             if not title_elem:
                 return None
 
@@ -135,7 +138,7 @@ class TechMCrawler(BaseCrawler):
     def _extract_url(self, item, source: str, index: int) -> Optional[str]:
         """Extract article URL with error handling."""
         try:
-            link_elem = item.find("a")
+            link_elem = item.select_one("a[href]")
             if not link_elem:
                 return None
 

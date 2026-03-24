@@ -96,7 +96,7 @@ INTERNATIONAL_SITES = [
         url="https://medium.com/tag/technology",
         crawler_class="MediumTechCrawler",
         language=SourceLanguage.ENGLISH,
-        enabled=True,
+        enabled=False,
         notes="Publishing platform with a strong tech community"
     ),
     InternationalSiteConfig(
@@ -128,7 +128,7 @@ INTERNATIONAL_SITES = [
         url="https://www.pcmag.com",
         crawler_class="PCMagCrawler",
         language=SourceLanguage.ENGLISH,
-        enabled=True,
+        enabled=False,
         notes="Complete guide to PC computers, peripherals and upgrades"
     ),
     InternationalSiteConfig(
@@ -136,7 +136,7 @@ INTERNATIONAL_SITES = [
         url="https://www.techradar.com",
         crawler_class="TechRadarCrawler",
         language=SourceLanguage.ENGLISH,
-        enabled=True,
+        enabled=False,
         notes="Source for tech buying advice, news and reviews"
     ),
     InternationalSiteConfig(

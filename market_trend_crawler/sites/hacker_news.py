@@ -30,38 +30,28 @@ class HackerNewsCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # Hacker News uses a specific table structure
+        # Hacker News uses table-based layout: each story is a <tr class="athing">
         rows = soup.select("tr.athing")
         for i, row in enumerate(rows):
             try:
-                # Extract title and URL from the next row
-                title_row = row.find_next_sibling("tr")
-                if not title_row:
-                    continue
-
-                title_elem = title_row.find("a", class_="storylink")
+                # Title and URL are inside .titleline > a within the athing row
+                title_elem = row.select_one(".titleline > a")
                 if not title_elem:
                     continue
+
                 title = title_elem.get_text(strip=True)
                 url = title_elem.get("href", "")
 
-                # Extract subtext row for date and other info
-                subtext_row = title_row.find_next_sibling("tr")
-                if subtext_row:
-                    subtext = subtext_row.get_text(strip=True)
+                if not title or not url:
+                    continue
 
-                    # Extract date
-                    published_at = datetime.now()
-                    if "ago" in subtext:
-                        # Parse "X hours ago" format
-                        import re
-                        hours_match = re.search(r'(\d+)\s+hours?\s+ago', subtext)
-                        if hours_match:
-                            hours = int(hours_match.group(1))
-                            published_at = datetime.now() - datetime.timedelta(hours=hours)
+                # Resolve relative URLs (e.g., item?id=... links)
+                if not url.startswith("http"):
+                    url = f"https://news.ycombinator.com/{url}"
 
-                # Hacker News doesn't always have content previews
+                # Hacker News doesn't have content previews
                 content = title
+                published_at = datetime.now()
 
                 # Determine category from URL and title
                 category = self._determine_category(url, title)
@@ -72,7 +62,6 @@ class HackerNewsCrawler(BaseCrawler):
                     content=content[:500],
                     source=source,
                     published_at=published_at,
-                    author=None,  # Hacker News usernames aren't always displayed in list view
                     category=category,
                     language=SourceLanguage.ENGLISH,
                 )

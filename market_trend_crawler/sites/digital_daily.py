@@ -16,6 +16,8 @@ from ..classification import classify_article
 class DigitalDailyCrawler(BaseCrawler):
     """Crawler for Digital Daily (디지털데일리) - https://www.ddaily.co.kr"""
 
+    BASE_URL = "https://www.ddaily.co.kr"
+
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from Digital Daily.
 
@@ -31,16 +33,16 @@ class DigitalDailyCrawler(BaseCrawler):
         articles = []
 
         # Digital Daily article list items
-        for item in soup.select(".news_list") or soup.select(".article-item"):
+        for item in soup.select("ul.wcms_outline li"):
             try:
                 # Extract title
-                title_elem = item.find("h2") or item.find("h3") or item.select_one(".title")
+                title_elem = item.select_one("p.title a")
                 if not title_elem:
                     continue
                 title = title_elem.get_text(strip=True)
 
                 # Extract URL
-                link_elem = item.find("a")
+                link_elem = item.select_one("p.title a")
                 if not link_elem:
                     continue
                 url = link_elem.get("href", "")

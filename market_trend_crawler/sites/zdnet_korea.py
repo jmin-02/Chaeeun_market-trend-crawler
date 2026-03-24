@@ -16,6 +16,8 @@ from ..classification import classify_article
 class ZDNetKoreaCrawler(BaseCrawler):
     """Crawler for ZDNet Korea - https://zdnet.co.kr"""
 
+    BASE_URL = "https://zdnet.co.kr"
+
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from ZDNet Korea.
 
@@ -31,16 +33,16 @@ class ZDNetKoreaCrawler(BaseCrawler):
         articles = []
 
         # ZDNet Korea article list items
-        for item in soup.select(".newsList li") or soup.select(".article-item"):
+        for item in soup.select("div.newsPost"):
             try:
                 # Extract title
-                title_elem = item.find("h3") or item.find("h2") or item.select_one(".title")
+                title_elem = item.select_one(".assetText a h3") or item.select_one(".assetText a h4")
                 if not title_elem:
                     continue
                 title = title_elem.get_text(strip=True)
 
                 # Extract URL
-                link_elem = item.find("a")
+                link_elem = item.select_one(".assetText a")
                 if not link_elem:
                     continue
                 url = link_elem.get("href", "")

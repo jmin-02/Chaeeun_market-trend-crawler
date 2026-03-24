@@ -30,8 +30,8 @@ class BrunchTechCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # Brunch Tech article list items
-        for item in soup.select(".post-item") or soup.select(".article"):
+        # Brunch Tech article list items - look for elements with 'item' in class name
+        for item in soup.select("[class*='item']"):
             try:
                 # Extract title
                 title_elem = item.find("h2") or item.find("h3") or item.select_one(".title")

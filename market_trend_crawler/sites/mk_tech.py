@@ -16,6 +16,8 @@ from ..classification import classify_article
 class MKTechCrawler(BaseCrawler):
     """Crawler for MK Tech (매일경제) - https://www.mk.co.kr"""
 
+    BASE_URL = "https://www.mk.co.kr"
+
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from MK Tech.
 
@@ -30,32 +32,31 @@ class MKTechCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # MK Tech article list items
-        for item in soup.select(".list_area") or soup.select(".article"):
+        # MK Tech article list items (each item is an <a> tag)
+        for item in soup.select("a.news_item"):
             try:
                 # Extract title
-                title_elem = item.find("h2") or item.find("h3") or item.select_one(".title")
+                title_elem = item.select_one("h4")
                 if not title_elem:
                     continue
                 title = title_elem.get_text(strip=True)
 
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
+                # Extract URL (the <a> tag itself has the href)
+                url = item.get("href", "")
+                if not url:
                     continue
-                url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
+                if not url.startswith("http"):
                     url = f"https://www.mk.co.kr{url}"
 
                 # Extract content preview
-                content_elem = item.select_one(".desc") or item.select_one(".summary")
+                content_elem = item.select_one("p.art_desc")
                 content = content_elem.get_text(strip=True) if content_elem else title
 
                 # Extract publication date
-                time_elem = item.find("time") or item.select_one(".date")
+                time_elem = item.select_one("p.time_info")
                 published_at = datetime.now()
                 if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
+                    datetime_str = time_elem.get_text(strip=True)
                     try:
                         published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
                     except (ValueError, AttributeError):

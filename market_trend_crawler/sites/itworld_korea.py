@@ -16,6 +16,8 @@ from ..classification import classify_article
 class ITWorldKoreaCrawler(BaseCrawler):
     """Crawler for ITWorld Korea - https://www.itworld.co.kr"""
 
+    BASE_URL = "https://www.itworld.co.kr"
+
     def extract_articles(self, html: str, source: str, language: str = "ko") -> list[Article]:
         """Extract articles from ITWorld Korea.
 
@@ -30,21 +32,20 @@ class ITWorldKoreaCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # ITWorld Korea article list items
-        for item in soup.select(".article-list-item") or soup.select(".list-item"):
+        # ITWorld Korea article list items (each card is an <a> tag)
+        for item in soup.select("a.card"):
             try:
                 # Extract title
-                title_elem = item.find("h2") or item.find("h3") or item.select_one(".headline")
+                title_elem = item.select_one("h3")
                 if not title_elem:
                     continue
                 title = title_elem.get_text(strip=True)
 
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
+                # Extract URL (the <a> tag itself has the href)
+                url = item.get("href", "")
+                if not url:
                     continue
-                url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
+                if not url.startswith("http"):
                     url = f"https://www.itworld.co.kr{url}"
 
                 # Extract content preview

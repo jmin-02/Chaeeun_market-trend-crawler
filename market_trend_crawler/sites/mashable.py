@@ -30,42 +30,30 @@ class MashableCrawler(BaseCrawler):
         soup = BeautifulSoup(html, "html.parser")
         articles = []
 
-        # Mashable article structure
-        for item in soup.select("article") or soup.select(".article-item"):
+        # Mashable uses links with /article/ prefix
+        seen_urls = set()
+
+        for link_elem in soup.select('a[href^="/article/"]'):
             try:
-                # Extract title
-                title_elem = item.find("h2") or item.select_one(".title") or item.find("h3")
-                if not title_elem:
-                    continue
-                title = title_elem.get_text(strip=True)
-
-                # Extract URL
-                link_elem = item.find("a")
-                if not link_elem:
-                    continue
                 url = link_elem.get("href", "")
-                if url and not url.startswith("http"):
-                    url = f"https://mashable.com{url}"
+                if not url:
+                    continue
 
-                # Extract content preview
-                content_elem = item.select_one(".excerpt") or item.select_one(".summary")
-                content = content_elem.get_text(strip=True) if content_elem else title
+                # Prepend base URL for relative paths
+                url = f"https://mashable.com{url}"
 
-                # Extract publication date
-                time_elem = item.find("time")
+                # Deduplicate
+                if url in seen_urls:
+                    continue
+                seen_urls.add(url)
+
+                title = link_elem.get_text(strip=True)
+                if not title or len(title) < 5:
+                    continue
+
+                content = title
                 published_at = datetime.now()
-                if time_elem:
-                    datetime_str = time_elem.get("datetime") or time_elem.get_text(strip=True)
-                    try:
-                        published_at = datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
-                    except (ValueError, AttributeError):
-                        pass
 
-                # Extract author
-                author_elem = item.select_one(".author") or item.select_one(".byline")
-                author = author_elem.get_text(strip=True) if author_elem else None
-
-                # Determine category from URL and title
                 category = self._determine_category(url, title)
 
                 article = Article(
@@ -74,7 +62,6 @@ class MashableCrawler(BaseCrawler):
                     content=content[:500],
                     source=source,
                     published_at=published_at,
-                    author=author,
                     category=category,
                     language=SourceLanguage.ENGLISH,
                 )
